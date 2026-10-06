@@ -1,49 +1,147 @@
 <!DOCTYPE html>
-<html><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Jarvis</title>
+<html lang="hi"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>JARVIS</title>
 <style>
-body{margin:0;background:#050b14;color:#7df9ff;font-family:sans-serif;text-align:center;padding:20px}
-#orb{width:140px;height:140px;border-radius:50%;margin:30px auto;background:radial-gradient(#7df9ff,#0a3d62);box-shadow:0 0 40px #7df9ff}
-button{font-size:20px;padding:14px 28px;border-radius:30px;border:0;background:#7df9ff;color:#000;margin:5px}
-#log{text-align:left;margin-top:20px;font-size:16px}
+:root{--c:#00e5ff;--bg:#02070d}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(circle at 50% 30%,#06223a,var(--bg) 70%);color:var(--c);font-family:'Courier New',monospace;height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidden}
+header{text-align:center;padding:12px 0 0;letter-spacing:10px;font-size:20px;text-shadow:0 0 12px var(--c)}
+#st{text-align:center;font-size:12px;letter-spacing:3px;opacity:.7;height:16px}
+#hud{position:relative;width:200px;height:200px;margin:8px auto;flex:none}
+.ring{position:absolute;inset:0;border-radius:50%;border:2px solid transparent}
+.r1{border-top-color:var(--c);border-bottom-color:var(--c);animation:spin 6s linear infinite}
+.r2{inset:14px;border-left-color:#7df9ff;border-right-color:#7df9ff;animation:spin 4s linear infinite reverse}
+.r3{inset:28px;border:1px dashed #0a7a8c;animation:spin 14s linear infinite}
+#orb{position:absolute;inset:50px;border-radius:50%;background:radial-gradient(circle,#b9fbff,#00a8c6 55%,#043b52);box-shadow:0 0 35px var(--c);transition:.3s;animation:pulse 3s ease-in-out infinite}
+.listening #orb{background:radial-gradient(circle,#fff,#00ff9d 55%,#046b4a);box-shadow:0 0 55px #00ff9d;animation:pulse .8s infinite}
+.thinking #orb{background:radial-gradient(circle,#fff,#ffb300 55%,#6b4a04);box-shadow:0 0 55px #ffb300;animation:pulse .5s infinite}
+.thinking .r1,.thinking .r2{animation-duration:1s}
+.speaking #orb{animation:pulse .4s infinite;box-shadow:0 0 70px var(--c)}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse{50%{transform:scale(1.12)}}
+#log{flex:1;overflow-y:auto;padding:8px 14px;font-size:15px;line-height:1.4}
+.m{margin:8px 0;padding:8px 12px;border-radius:10px;max-width:92%;white-space:pre-wrap;word-wrap:break-word}
+.u{background:#0b2a3a;margin-left:auto;text-align:right;color:#bff}
+.j{background:#031a26;border:1px solid #0a5a6c}
+.e{color:#ff8a80;border:1px solid #7a2a2a;background:#1a0808}
+#bar{padding:8px 10px calc(10px + env(safe-area-inset-bottom));background:#02101a;border-top:1px solid #0a4a5c}
+#row{display:flex;gap:6px;margin-bottom:8px}
+#t{flex:1;background:#031a26;border:1px solid #0a5a6c;color:var(--c);border-radius:20px;padding:10px 14px;font-size:15px;font-family:inherit;min-width:0}
+button{background:transparent;color:var(--c);border:1px solid var(--c);border-radius:20px;padding:10px 14px;font-size:14px;font-family:inherit}
+button:active{background:var(--c);color:#000}
+#mic{width:100%;font-size:18px;padding:14px;background:var(--c);color:#000;font-weight:bold;box-shadow:0 0 18px var(--c)}
+#tools{display:flex;gap:6px;margin-top:8px}
+#tools button{flex:1;font-size:12px;padding:8px 2px}
+.on{background:#00ff9d!important;color:#000!important;border-color:#00ff9d!important}
 </style></head><body>
-<h1>JARVIS</h1>
-<div id="orb"></div>
-<button id="b">🎤 Bolo</button>
-<button id="k">🔑 Key badlo</button>
+<header>JARVIS</header>
+<div id="st">ONLINE</div>
+<div id="hud"><div class="ring r1"></div><div class="ring r2"></div><div class="ring r3"></div><div id="orb"></div></div>
 <div id="log"></div>
+<div id="bar">
+ <div id="row"><input id="t" placeholder="Yahan type karo..."><button id="send">➤</button></div>
+ <button id="mic">🎤 BOLO</button>
+ <div id="tools"><button id="auto">🔁 AUTO: OFF</button><button id="key">🔑 KEY</button><button id="clr">🗑 YAAD MITAO</button></div>
+</div>
 <script>
-let key=localStorage.getItem("k")||prompt("Apni Gemini API key daalo:");
-if(key){key=key.trim();localStorage.setItem("k",key)}
-document.getElementById("k").onclick=()=>{
- const n=prompt("Nayi Gemini API key daalo:");
- if(n){key=n.trim();localStorage.setItem("k",key);alert("Key save ho gayi")}
-};
-const log=document.getElementById("log");
-function add(t){log.innerHTML+="<p>"+t+"</p>"}
-function speak(t){const u=new SpeechSynthesisUtterance(t);u.lang="hi-IN";speechSynthesis.speak(u)}
-async function ask(q){
- try{
-  const r=await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key="+key,{
-   method:"POST",headers:{"Content-Type":"application/json"},
-   body:JSON.stringify({
-    systemInstruction:{parts:[{text:"Tum Jarvis ho, ek smart, shant aur thoda witty AI assistant. Hinglish mein chhote jawab do."}]},
-    contents:[{role:"user",parts:[{text:q}]}]
-   })});
-  const d=await r.json();
-  if(d.error)return "ERROR: "+d.error.message;
-  return d.candidates[0].content.parts[0].text;
- }catch(e){return "ERROR: "+e.message}
+const $=id=>document.getElementById(id);
+const hud=$("hud"),logEl=$("log"),stEl=$("st");
+let key=(localStorage.getItem("k")||"").trim();
+if(!key){key=(prompt("Apni Gemini API key daalo:")||"").trim();if(key)localStorage.setItem("k",key)}
+let hist=[];try{hist=JSON.parse(localStorage.getItem("h")||"[]")}catch(e){}
+let auto=false,busy=false,listening=false,useSearch=true;
+const MODELS=["gemini-3.8-flash","gemini-flash-latest","gemini-flash-lite-latest"];
+
+function setState(s,txt){hud.className=s;stEl.textContent=txt||s.toUpperCase()}
+function add(cls,t){const d=document.createElement("div");d.className="m "+cls;d.textContent=t;logEl.appendChild(d);logEl.scrollTop=logEl.scrollHeight}
+function save(){hist=hist.slice(-24);try{localStorage.setItem("h",JSON.stringify(hist))}catch(e){}}
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+
+/* ---- Bolna ---- */
+function clean(t){return t.replace(/[*#_`>~]/g,"").replace(/https?:\/\/\S+/g,"link")}
+function speak(t){
+ return new Promise(res=>{
+  try{
+   speechSynthesis.cancel();
+   const u=new SpeechSynthesisUtterance(clean(t));u.lang="hi-IN";u.rate=1;
+   const v=speechSynthesis.getVoices().find(v=>v.lang&&v.lang.startsWith("hi"));if(v)u.voice=v;
+   u.onend=u.onerror=()=>res();
+   setState("speaking");speechSynthesis.speak(u);
+  }catch(e){res()}
+ });
 }
-const R=window.SpeechRecognition||window.webkitSpeechRecognition;
-const rec=new R();rec.lang="hi-IN";
-document.getElementById("b").onclick=()=>rec.start();
-rec.onresult=async e=>{
- const q=e.results[0][0].transcript;
- add("Aap: "+q);
- const a=await ask(q);
- add("Jarvis: "+a);
- if(!a.startsWith("ERROR"))speak(a);
-};
-</script></body></html>
+
+/* ---- Local commands ---- */
+function local(q){
+ const s=q.toLowerCase();
+ if(/(kitne baje|time kya|samay|टाइम|समय|कितने बजे)/.test(s))return "Abhi "+new Date().toLocaleTimeString("hi-IN",{hour:"2-digit",minute:"2-digit"})+" baje hain.";
+ if(/(aaj.*(date|tareekh|din)|what.*date|तारीख|आज कौन सा दिन)/.test(s))return "Aaj "+new Date().toLocaleDateString("hi-IN",{weekday:"long",day:"numeric",month:"long",year:"numeric"})+" hai.";
+ const m=s.match(/(\d+)\s*(minute|min|मिनट|second|sec|सेकंड|सेकण्ड)/);
+ if(m&&/(timer|टाइमर|reminder|yaad dila|याद दिला)/.test(s)){
+  const n=+m[1],sec=/^(second|sec|सेक)/.test(m[2])?n:n*60;
+  setTimeout(()=>{add("j","⏰ Timer khatam!");speak("Sir, aapka timer khatam ho gaya.")},sec*1000);
+  return "Theek hai, "+n+" "+(sec===n?"second":"minute")+" ka timer laga diya.";
+ }
+ const apps={youtube:"https://www.youtube.com",यूट्यूब:"https://www.youtube.com",whatsapp:"https://wa.me/",व्हाट्सएप:"https://wa.me/",maps:"https://maps.google.com",मैप्स:"https://maps.google.com",gmail:"https://mail.google.com",google:"https://www.google.com"};
+ if(/(open|kholo|khol do|खोलो|खोल दो|चालू)/.test(s)){
+  for(const k in apps)if(s.includes(k)){setTimeout(()=>window.open(apps[k],"_blank"),1500);return k+" khol raha hoon.";}
+ }
+ return null;
+}
+
+/* ---- Gemini ---- */
+async function callModel(model,withSearch){
+ const body={
+  systemInstruction:{parts:[{text:"Tum JARVIS ho, Iron Man ke AI jaisa smart, shant, vafadar aur thoda witty assistant. User ko 'Sir' bolo. Hinglish (Roman script) mein chhote, saaf jawab do, 1-3 vakya. Aaj ki tareekh aur samay: "+new Date().toLocaleString("hi-IN")+". Taza jaankari ke liye search use karo. Markdown ya emoji mat use karo kyunki jawab bolkar sunaya jata hai."}]},
+  contents:hist
+ };
+ if(withSearch)body.tools=[{google_search:{}}];
+ const r=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+model+":generateContent?key="+encodeURIComponent(key),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+ return r.json();
+}
+async function ask(){
+ let lastErr="";
+ for(const model of MODELS){
+  for(let a=0;a<2;a++){
+   try{
+    const d=await callModel(model,useSearch);
+    if(d.error){
+     lastErr=d.error.message||"error";
+     const c=d.error.code;
+     if(c===400&&useSearch&&/tool|search|ground/i.test(lastErr)){useSearch=false;a--;continue}
+     if(c===400||c===401||c===403){if(/api key|API_KEY|permission/i.test(lastErr))throw new Error("KEY: "+lastErr);break}
+     if(c===404)break;
+     await sleep(1200*(a+1));continue;
+    }
+    const p=d.candidates&&d.candidates[0]&&d.candidates[0].content&&d.candidates[0].content.parts;
+    if(p){const t=p.map(x=>x.text||"").join("").trim();if(t)return t}
+    lastErr="Khali jawab aaya";break;
+   }catch(e){if(String(e.message).startsWith("KEY:"))throw e;lastErr=e.message;await sleep(1000)}
+  }
+ }
+ throw new Error(lastErr||"Unknown error");
+}
+
+/* ---- Main flow ---- */
+async function handle(q){
+ q=q.trim();if(!q||busy)return;
+ busy=true;add("u",q);
+ let reply=local(q);
+ if(reply===null){
+  setState("thinking","SOCH RAHA HOON");
+  hist.push({role:"user",parts:[{text:q}]});
+  try{reply=await ask();hist.push({role:"model",parts:[{text:reply}]});save()}
+  catch(e){hist.pop();add("e","ERROR: "+e.message+(String(e.message).startsWith("KEY:")?"\n\n🔑 KEY button dabake nayi key daalo.":"\n\nThodi der baad phir try karo."));busy=false;setState("idle","ONLINE");afterTurn();return}
+ }
+ add("j",reply);
+ await speak(reply);
+ busy=false;setState("idle","ONLINE");afterTurn();
+}
+function afterTurn(){if(auto)setTimeout(startListen,400)}
+
+/* ---- Sunna ---- */
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+let rec=null;
+if(SR){
+ rec=new SR();rec.lang="hi-IN";rec.interimResults=false;rec.maxAlte
