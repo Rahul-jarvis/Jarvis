@@ -5,16 +5,21 @@
 <style>
 body{margin:0;background:#050b14;color:#7df9ff;font-family:sans-serif;text-align:center;padding:20px}
 #orb{width:140px;height:140px;border-radius:50%;margin:30px auto;background:radial-gradient(#7df9ff,#0a3d62);box-shadow:0 0 40px #7df9ff}
-button{font-size:20px;padding:14px 28px;border-radius:30px;border:0;background:#7df9ff;color:#000}
+button{font-size:20px;padding:14px 28px;border-radius:30px;border:0;background:#7df9ff;color:#000;margin:5px}
 #log{text-align:left;margin-top:20px;font-size:16px}
 </style></head><body>
 <h1>JARVIS</h1>
 <div id="orb"></div>
 <button id="b">🎤 Bolo</button>
+<button id="k">🔑 Key badlo</button>
 <div id="log"></div>
 <script>
 let key=localStorage.getItem("k")||prompt("Apni Gemini API key daalo:");
-if(key)localStorage.setItem("k",key);
+if(key){key=key.trim();localStorage.setItem("k",key)}
+document.getElementById("k").onclick=()=>{
+ const n=prompt("Nayi Gemini API key daalo:");
+ if(n){key=n.trim();localStorage.setItem("k",key);alert("Key save ho gayi")}
+};
 const log=document.getElementById("log");
 function add(t){log.innerHTML+="<p>"+t+"</p>"}
 function speak(t){const u=new SpeechSynthesisUtterance(t);u.lang="hi-IN";speechSynthesis.speak(u)}
@@ -27,8 +32,9 @@ async function ask(q){
     contents:[{role:"user",parts:[{text:q}]}]
    })});
   const d=await r.json();
+  if(d.error)return "ERROR: "+d.error.message;
   return d.candidates[0].content.parts[0].text;
- }catch(e){return "Kuch gadbad ho gayi, key check karo."}
+ }catch(e){return "ERROR: "+e.message}
 }
 const R=window.SpeechRecognition||window.webkitSpeechRecognition;
 const rec=new R();rec.lang="hi-IN";
@@ -38,6 +44,6 @@ rec.onresult=async e=>{
  add("Aap: "+q);
  const a=await ask(q);
  add("Jarvis: "+a);
- speak(a);
+ if(!a.startsWith("ERROR"))speak(a);
 };
 </script></body></html>
