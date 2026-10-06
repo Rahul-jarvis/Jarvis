@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Jarvis</title>
+<style>
+body{margin:0;background:#050b14;color:#7df9ff;font-family:sans-serif;text-align:center;padding:20px}
+#orb{width:140px;height:140px;border-radius:50%;margin:30px auto;background:radial-gradient(#7df9ff,#0a3d62);box-shadow:0 0 40px #7df9ff}
+button{font-size:20px;padding:14px 28px;border-radius:30px;border:0;background:#7df9ff;color:#000}
+#log{text-align:left;margin-top:20px;font-size:16px}
+</style></head><body>
+<h1>JARVIS</h1>
+<div id="orb"></div>
+<button id="b">🎤 Bolo</button>
+<div id="log"></div>
+<script>
+let key=localStorage.getItem("k")||prompt("Apni Gemini API key daalo:");
+if(key)localStorage.setItem("k",key);
+const log=document.getElementById("log");
+function add(t){log.innerHTML+="<p>"+t+"</p>"}
+function speak(t){const u=new SpeechSynthesisUtterance(t);u.lang="hi-IN";speechSynthesis.speak(u)}
+async function ask(q){
+ try{
+  const r=await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key="+key,{
+   method:"POST",headers:{"Content-Type":"application/json"},
+   body:JSON.stringify({
+    systemInstruction:{parts:[{text:"Tum Jarvis ho, ek smart, shant aur thoda witty AI assistant. Hinglish mein chhote jawab do."}]},
+    contents:[{role:"user",parts:[{text:q}]}]
+   })});
+  const d=await r.json();
+  return d.candidates[0].content.parts[0].text;
+ }catch(e){return "Kuch gadbad ho gayi, key check karo."}
+}
+const R=window.SpeechRecognition||window.webkitSpeechRecognition;
+const rec=new R();rec.lang="hi-IN";
+document.getElementById("b").onclick=()=>rec.start();
+rec.onresult=async e=>{
+ const q=e.results[0][0].transcript;
+ add("Aap: "+q);
+ const a=await ask(q);
+ add("Jarvis: "+a);
+ speak(a);
+};
+</script></body></html>
